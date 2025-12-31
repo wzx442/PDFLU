@@ -1,0 +1,17 @@
+dataset/cifar10/
+dataset/cifar100/
+dataset/fashionmnist/
+dataset/mnist/
+logs/
+result/
+plot/
+save_model/
+
+*.csv
+
+*.json
+
+*.png
+
+*.pth
+
