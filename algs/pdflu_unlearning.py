@@ -486,90 +486,89 @@ class PDFLU(Base):
         checkpoints_ls = [] 
         all_global_models = list() 
         all_client_models = list() 
-        global_model = unlearning_model # 全局模型
-        result_list = [] # 结果列表
-        avg_list = [] # 平均列表 , 我自己创建的
+        global_model = unlearning_model 
+        result_list = [] 
+        avg_list = [] 
         relearn_client_ls =[]
 
-        all_global_models.append(global_model) # 添加全局模型
-        std_time = time.time() # 标准时间
-        for epoch in range(self.args.global_epoch): # 遍历全局轮数
-            print(f"\nRelearn Round = {epoch}") # 打印重学习轮数
+        all_global_models.append(global_model)
+        std_time = time.time()
+        for epoch in range(self.args.global_epoch): 
+            print(f"\nRelearn Round = {epoch}") 
 
-            if self.args.forget_paradigm == 'client': # 如果遗忘范式为客户端
-                select_client_loaders = list() # 选择客户端加载器列表
-                for idx in self.args.forget_client_idx: # 遍历遗忘客户端索引
-                    select_client_loaders.append(client_all_loaders[idx]) # 添加遗忘客户端加载器
+            if self.args.forget_paradigm == 'client': 
+                select_client_loaders = list() 
+                for idx in self.args.forget_client_idx: 
+                    select_client_loaders.append(client_all_loaders[idx]) 
                     relearn_client_ls.append(idx)
-                print(f"重学习客户端为: {relearn_client_ls}")
+                print(f"retrain_client_ls: {relearn_client_ls}")
             
-            elif self.args.forget_paradigm == 'class': # 如果遗忘范式为类
+            elif self.args.forget_paradigm == 'class': 
                 select_client_loaders = list()
-                client_loaders = select_forget_class(self.args, copy.deepcopy(client_all_loaders)) # 选择遗忘类
-                for v in client_loaders: # 遍历客户端加载器
-                    if v is not None: # 如果客户端加载器不为空
+                client_loaders = select_forget_class(self.args, copy.deepcopy(client_all_loaders)) 
+                for v in client_loaders: 
+                    if v is not None: 
                         select_client_loaders.append(v)
-            elif self.args.forget_paradigm == 'sample': # 如果遗忘范式为样本
-                select_client_loaders = list() # 选择客户端加载器列表
-                client_loaders = select_forget_sample(self.args, copy.deepcopy(client_all_loaders)) # 选择遗忘样本
-                for v in client_loaders: # 遍历客户端加载器
-                    if v is not None: # 如果客户端加载器不为空
+            elif self.args.forget_paradigm == 'sample': 
+                select_client_loaders = list() 
+                client_loaders = select_forget_sample(self.args, copy.deepcopy(client_all_loaders)) 
+                for v in client_loaders: 
+                    if v is not None: 
                         select_client_loaders.append(v)
 
-            client_models, client_data_num = self.global_train_once_in_relearn(epoch, global_model, select_client_loaders, test_loaders, self.args, checkpoints_ls, relearn_client_ls) # 全局训练一次
+            client_models, client_data_num = self.global_train_once_in_relearn(epoch, global_model, select_client_loaders, test_loaders, self.args, checkpoints_ls, relearn_client_ls) 
 
-            all_client_models += client_models # 添加客户端模型
+            all_client_models += client_models 
             if self.args.paradigm == 'pdflu':
-                ######这里应该用明文聚合，因为遗忘客户端的数量是不可能达到沙米尔的阈值的####################################
-                global_model = self.weighted_aggregation_in_relearn(client_models, client_data_num) # 加权聚合
-                ###############################################################
+                global_model = self.weighted_aggregation_in_relearn(client_models, client_data_num) 
+                
                 
             else:
-                global_model = self.fedavg(client_models) # 联邦平均
+                global_model = self.fedavg(client_models) 
 
-            all_global_models.append(copy.deepcopy(global_model).to('cpu')) # 添加全局模型
-            end_time = time.time() # 结束时间
+            all_global_models.append(copy.deepcopy(global_model).to('cpu')) 
+            end_time = time.time() 
 
-            consume_time = end_time - std_time # 消耗时间
+            consume_time = end_time - std_time 
 
-            if self.args.forget_paradigm == 'client': # 如果遗忘范式为客户端    
-                avg_f_acc, avg_r_acc, test_result_ls = test_client_forget(self, epoch, global_model, self.args, test_loaders) # 测试客户端遗忘
+            if self.args.forget_paradigm == 'client':     
+                avg_f_acc, avg_r_acc, test_result_ls = test_client_forget(self, epoch, global_model, self.args, test_loaders) 
                 print(f"avg_f_acc: {avg_f_acc}, avg_r_acc: {avg_r_acc}")
-                for item in test_result_ls: # 遍历测试结果
-                    item.append(consume_time) # 添加消耗时间
-                result_list.extend(test_result_ls) # 添加测试结果
-                avg_list.append((epoch, avg_f_acc, avg_r_acc)) # 添加平均精确率
-                df = pd.DataFrame(result_list, columns=['Epoch', 'Client_id', 'Class_id', 'Label_num', 'Test_acc', 'Test_loss', 'Comsume_time']) # 创建数据框
-                df_avg = pd.DataFrame(avg_list, columns=['Epoch', 'Avg_f_acc', 'Avg_r_acc']) # 创建数据框
-                df_avg['Comsume_time'] = consume_time # 添加消耗时间
+                for item in test_result_ls: 
+                    item.append(consume_time) 
+                result_list.extend(test_result_ls) 
+                avg_list.append((epoch, avg_f_acc, avg_r_acc)) 
+                df = pd.DataFrame(result_list, columns=['Epoch', 'Client_id', 'Class_id', 'Label_num', 'Test_acc', 'Test_loss', 'Comsume_time']) 
+                df_avg = pd.DataFrame(avg_list, columns=['Epoch', 'Avg_f_acc', 'Avg_r_acc']) 
+                df_avg['Comsume_time'] = consume_time 
 
-            elif self.args.forget_paradigm == 'class': # 如果遗忘范式为类
-                avg_f_acc, avg_r_acc, test_result_ls = test_class_forget(self, epoch, global_model, self.args, test_loaders) # 测试类遗忘
+            elif self.args.forget_paradigm == 'class': 
+                avg_f_acc, avg_r_acc, test_result_ls = test_class_forget(self, epoch, global_model, self.args, test_loaders) 
                 print(f"avg_f_acc: {avg_f_acc}, avg_r_acc: {avg_r_acc}")
-                for item in test_result_ls: # 遍历测试结果
-                    item.append(consume_time) # 添加消耗时间
-                result_list.extend(test_result_ls) # 添加测试结果
-                avg_list.append((epoch, avg_f_acc, avg_r_acc)) # 添加平均精确率
+                for item in test_result_ls: 
+                    item.append(consume_time) 
+                result_list.extend(test_result_ls) 
+                avg_list.append((epoch, avg_f_acc, avg_r_acc)) 
                 df = pd.DataFrame(result_list, columns=['Epoch', 'Client_id', 'Class_id', 'Test_acc', 'Test_loss', 'Comsume_time'])  
-                df_avg = pd.DataFrame(avg_list, columns=['Epoch', 'Avg_f_acc', 'Avg_r_acc']) # 创建数据框
-                df_avg['Comsume_time'] = consume_time # 添加消耗时间
+                df_avg = pd.DataFrame(avg_list, columns=['Epoch', 'Avg_f_acc', 'Avg_r_acc']) 
+                df_avg['Comsume_time'] = consume_time 
 
-            elif self.args.forget_paradigm == 'sample': # 如果遗忘范式为样本
-                avg_jingdu, avg_acc_zero, avg_test_acc, test_result_ls = test_backdoor_forget(self, epoch, global_model, self.args, test_loaders) # 测试后门遗忘
+            elif self.args.forget_paradigm == 'sample': 
+                avg_jingdu, avg_acc_zero, avg_test_acc, test_result_ls = test_backdoor_forget(self, epoch, global_model, self.args, test_loaders) 
                 print(f"avg_jingdu: {avg_jingdu}, avg_acc_zero: {avg_acc_zero}, avg_test_acc: {avg_test_acc}")
-                for item in test_result_ls: # 遍历测试结果
-                    item.append(consume_time) # 添加消耗时间
-                result_list.extend(test_result_ls) # 添加测试结果
-                avg_list.append((epoch, avg_jingdu, avg_acc_zero, avg_test_acc)) # 添加平均精确率
-                df = pd.DataFrame(result_list, columns=['Epoch', 'Client_id', 'Jingdu', 'Acc_zero', 'Test_acc', 'Comsume_time']) # 创建数据框
-                df_avg = pd.DataFrame(avg_list, columns=['Epoch', 'Avg_jingdu', 'Avg_acc_zero', 'Avg_test_acc']) # 创建数据框
-                df_avg['Comsume_time'] = consume_time # 添加消耗时间
+                for item in test_result_ls: 
+                    item.append(consume_time) 
+                result_list.extend(test_result_ls) 
+                avg_list.append((epoch, avg_jingdu, avg_acc_zero, avg_test_acc)) 
+                df = pd.DataFrame(result_list, columns=['Epoch', 'Client_id', 'Jingdu', 'Acc_zero', 'Test_acc', 'Comsume_time']) 
+                df_avg = pd.DataFrame(avg_list, columns=['Epoch', 'Avg_jingdu', 'Avg_acc_zero', 'Avg_test_acc']) 
+                df_avg['Comsume_time'] = consume_time 
 
-            global_model.to('cpu') # 将全局模型移动到CPU
+            global_model.to('cpu') 
 
            
         
-        if self.args.cut_sample == 1.0: # 如果切分样本为1.0
+        if self.args.cut_sample == 1.0: 
             df.to_csv('./results/{}/relearn/relearn_data_{}_distri_{}_fnum_{}_algo_{}_{}.csv'.format(
                                                                                             self.args.forget_paradigm,
                                                                                             self.args.data_name,
@@ -577,15 +576,15 @@ class PDFLU(Base):
                                                                                             len(self.args.forget_class_idx),
                                                                                             self.args.paradigm,
                                                                                             self.args.file_name), 
-                                                                                            index=False) # 保存结果
+                                                                                            index=False) 
             df_avg.to_csv('./logs/{}/relearn/relearn_data_{}_distri_{}_fnum_{}_algo_{}_{}.csv'.format(
                                                                                             self.args.forget_paradigm,
                                                                                             self.args.data_name,
                                                                                             self.args.alpha,
                                                                                             len(self.args.forget_class_idx),
                                                                                             self.args.paradigm,
-                                                                                            self.args.file_name), index=False) # 保存结果
-        elif self.args.cut_sample < 1.0: # 如果切分样本小于1.0
+                                                                                            self.args.file_name), index=False) 
+        elif self.args.cut_sample < 1.0: 
             df.to_csv('./results/{}/relearn/relearn_data_{}_distri_{}_fnum_{}_algo_{}_partdata_{}_{}.csv'.format(  
                                                                                                         self.args.forget_paradigm,
                                                                                                         self.args.data_name,
@@ -594,8 +593,7 @@ class PDFLU(Base):
                                                                                                         self.args.paradigm, 
                                                                                                         self.args.cut_sample,
                                                                                                         self.args.file_name), index=False) # 保存结果
-        return # 返回重学习结果
-
+        return 
 
 
 

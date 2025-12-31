@@ -31,7 +31,7 @@ def get_args():
     parser.add_argument('--relearn', default=False, type=bool, help='whether to relearn the unlearned knowledge')
     parser.add_argument('--save_normal_result', default=True, type=bool, help='whether to save the normal result')
     # ======================batchsize setting===========================
-    parser.add_argument('--local_batch_size', default=64, type=int)  # 调整为64以提高训练稳定性
+    parser.add_argument('--local_batch_size', default=64, type=int)  
     parser.add_argument('--test_batch_size', default=128, type=int)
     # ======================training epoch===========================
     # TODO

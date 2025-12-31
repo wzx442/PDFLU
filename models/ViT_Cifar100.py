@@ -14,12 +14,12 @@ from transformers import ViTForImageClassification
 
 
 
-class ViT_Cifar100(nn.Module): # 创建ViT_Cifar100
-    def __init__(self, config): # 初始化
-        super(ViT_Cifar100, self).__init__() # 初始化
-        self.num_classes = config.num_classes # 创建num_classes
-        self.model = timm.create_model('vit_small_patch16_224', pretrained=True) # 创建model
-        self.model.head = nn.Linear(self.model.head.in_features, self.num_classes) # 创建model.head
+class ViT_Cifar100(nn.Module): 
+    def __init__(self, config): 
+        super(ViT_Cifar100, self).__init__() 
+        self.num_classes = config.num_classes 
+        self.model = timm.create_model('vit_small_patch16_224', pretrained=True) 
+        self.model.head = nn.Linear(self.model.head.in_features, self.num_classes)
 
-    def forward(self, x): # 前向传播
-        return self.model(x) # 返回model(x)
+    def forward(self, x): 
+        return self.model(x) 

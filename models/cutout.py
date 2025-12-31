@@ -19,7 +19,6 @@ class Cutout(object):
         mask = np.ones((h, w), np.float32)
 
         for n in range(self.n_holes):
-        	# (x,y)表示方形补丁的中心位置
             y = np.random.randint(h)
             x = np.random.randint(w)
 

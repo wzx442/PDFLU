@@ -30,16 +30,16 @@ def model_init(args):
     elif args.data_name == 'cifar10':
         args.num_classes = 10
         if args.resnet == 34:
-            args.lr = 0.0005  # 进一步降低ResNet34的学习率
+            args.lr = 0.0005  
         else:
-            args.lr = 0.01  # 其他模型使用默认学习率
+            args.lr = 0.01  
         # args.midimension = 512
         if args.resnet==18:
             model = CNN_Cifar10.Model(args)
         elif args.resnet==34:
-            print("使用ResNet34")
+            print("use ResNet34")
             model = CNN_Cifar10.Model2(args)
-        init_network(model, method='kaiming')  # 使用kaiming初始化
+        init_network(model, method='kaiming')  
 
 
     elif args.data_name == 'cifar100':
@@ -63,7 +63,7 @@ def init_network(model, method='xavier', exclude='embedding', seed=123):
             nn.init.constant_(w, 0)
         else:
             if 'batch' in name:
-                nn.init.constant_(w, 1)  # BatchNorm的weight初始化为1
+                nn.init.constant_(w, 1)  
                 continue
             if method == 'xavier':
                 if len(w.shape) < 2:
@@ -125,7 +125,6 @@ def test_class_forget(obj, epoch, model, args, test_loaders):
 def test_normal(obj, model, test_loaders, args):
     test_acc_ls = []
     test_loss_ls = []
-    # 在所有客户端上测试，而不是只在selected_clients上测试
     for k in range(args.num_user):
         test_loader = test_loaders[k]
         label_data_dict = {}
@@ -139,7 +138,7 @@ def test_normal(obj, model, test_loaders, args):
         label_data_loaders = {}
         for label, data_list in label_data_dict.items():
             # class_dataset = Dataset(data_list)
-            class_loader = DataLoader(data_list, batch_size=args.test_batch_size, shuffle=False)  # 设置shuffle=False以获得稳定的结果
+            class_loader = DataLoader(data_list, batch_size=args.test_batch_size, shuffle=False)  
             label_data_loaders[label] = class_loader
 
         for label, loader in label_data_loaders.items():
@@ -152,46 +151,6 @@ def test_normal(obj, model, test_loaders, args):
 
     return avg_test_loss, avg_test_acc
 
-
-# def test_backdoor_forget(obj, epoch, model, args, test_loaders):
-#     """
-#     avg_acc_zero: ASR
-#     avg_jingdu: 精确率 (Precision)	对后门预测的置信度
-#     avg_test_acc: 测试准确率
-#     """
-#     jingdu_ls = []
-#     acc_zero_ls = []
-#     test_acc_ls = []
-#     test_result_ls = []
-#     for k in range(args.num_user):
-#         test_loader = test_loaders[k]
-
-#         dataset_x = []
-#         dataset_y = []
-#         for data, target in test_loader:
-#             x_bk = copy.deepcopy(data)
-#             x_bk[:, :, -1, -1] = 255
-#             # data, target = insert_backdoor(args, data, target)
-#             dataset_x.extend(data.cpu().detach().numpy())
-#             dataset_y.extend(target.cpu().detach().numpy())
-#         dataset_x = np.array(dataset_x)
-#         dataset_y = np.array(dataset_y)
-#         dataset_x = torch.Tensor(dataset_x).type(torch.float32)
-#         dataset_y = torch.Tensor(dataset_y).type(torch.int64)
-#         dataset = [(x, y) for x, y in zip(dataset_x, dataset_y)]
-
-#         test_data = torch.utils.data.DataLoader(dataset, batch_size=args.test_batch_size, shuffle=True)
-#         (jingdu, acc_zero, test_acc) = obj.test(model, test_data, args)
-#         test_result_ls.append([epoch, k, jingdu, acc_zero, test_acc])
-#         jingdu_ls.append(jingdu)
-#         acc_zero_ls.append(acc_zero)
-#         test_acc_ls.append(test_acc)
-
-#     avg_jingdu = sum(jingdu_ls) / len(jingdu_ls)
-#     avg_acc_zero = sum(acc_zero_ls) / len(acc_zero_ls)
-#     avg_test_acc = sum(test_acc_ls) / len(test_acc_ls)
-
-#     return avg_jingdu, avg_acc_zero, avg_test_acc, test_result_ls
 
 
 def test_backdoor_forget(obj, epoch, model, args, test_loaders):
@@ -207,12 +166,8 @@ def test_backdoor_forget(obj, epoch, model, args, test_loaders):
         for data, target in test_loader:
             x_bk = copy.deepcopy(data)
             x_bk[:, :, -1, -1] = 255
-            # data, target = insert_backdoor(args, data, target)
-            # dataset_x.extend(data.cpu().detach().numpy())
-            # dataset_y.extend(target.cpu().detach().numpy())
-            # 使用原始数据和标签进行测试，而不是强制将所有标签设为0
-            dataset_x.extend(x_bk.cpu().detach().numpy())  # 使用带触发器的数据
-            dataset_y.extend(target.cpu().detach().numpy())  # 使用原始标签
+            dataset_x.extend(x_bk.cpu().detach().numpy())  
+            dataset_y.extend(target.cpu().detach().numpy())  
         dataset_x = np.array(dataset_x)
         dataset_y = np.array(dataset_y)
         dataset_x = torch.Tensor(dataset_x).type(torch.float32)
@@ -235,115 +190,43 @@ def test_backdoor_forget(obj, epoch, model, args, test_loaders):
 
 
 
-# def test_backdoor_forget(obj, epoch, model, args, test_loaders):
-#     jingdu_ls = []
-#     acc_zero_ls = []
-#     test_acc_ls = []
-#     test_result_ls = []
-    
-#     for k in range(args.num_user):
-#         test_loader = test_loaders[k]
-
-#         dataset_x = []
-#         dataset_y = []
-#         for data, target in test_loader:
-#             x_bk = copy.deepcopy(data)
-#             x_bk[:, :, -1, -1] = 255
-#             dataset_x.extend(data.cpu().detach().numpy())
-#             dataset_y.extend(target.cpu().detach().numpy())
-        
-#         dataset_x = np.array(dataset_x)
-#         dataset_y = np.array(dataset_y)
-#         dataset_x = torch.Tensor(dataset_x).type(torch.float32)
-#         dataset_y = torch.Tensor(dataset_y).type(torch.int64)
-#         dataset = [(x, y) for x, y in zip(dataset_x, dataset_y)]
-
-#         test_data = torch.utils.data.DataLoader(dataset, batch_size=args.test_batch_size, shuffle=True)
-
-#         # 设置模型为评估模式
-#         model.eval()
-#         with torch.no_grad():  # 禁用梯度计算
-#             (jingdu, acc_zero, test_acc) = obj.test(model, test_data, args)
-
-#         # 检查真实零样本数量
-#         if acc_zero is None or acc_zero == 0:
-#             print(f"Warning: User {k} has no zero samples.")
-#             acc_zero = 0  # 或者设置为其他默认值
-        
-#         test_result_ls.append([epoch, k, jingdu, acc_zero, test_acc])
-#         jingdu_ls.append(jingdu)
-#         acc_zero_ls.append(acc_zero)
-#         test_acc_ls.append(test_acc)
-
-#     avg_jingdu = sum(jingdu_ls) / len(jingdu_ls)
-#     avg_acc_zero = sum(acc_zero_ls) / len(acc_zero_ls) if acc_zero_ls else 0
-#     avg_test_acc = sum(test_acc_ls) / len(test_acc_ls)
-
-#     return avg_jingdu, avg_acc_zero, avg_test_acc, test_result_ls
-
 def test_client_forget(obj, epoch, model, args, test_loaders):
-    """
-    功能:
-    测试客户端遗忘
-    1. 遍历所有客户端
-    2. 测试客户端遗忘
-    3. 计算平均遗忘准确率
-    4. 计算平均记住准确率
-
-    输入:
-    obj: 对象
-    epoch: 轮数
-    model: 模型
-    args: 参数
-    test_loaders: 测试加载器
-    
-    输出:
-    avg_f_acc: 平均遗忘准确率
-    avg_r_acc: 平均记住准确率
-    test_result_ls: 测试结果列表
-    """
-    all_idx = [k for k in range(args.num_user)] # 所有客户端索引
-    forget_acc_ls = [] # 遗忘准确率列表
-    remember_acc_ls = [] # 记住准确率列表
-    test_result_ls = [] # 测试结果列表
-    for k in range(args.num_user): # 遍历所有客户端
-        test_loader = test_loaders[k] # 测试加载器
-        label_data_dict = {} # 标签数据字典
+    all_idx = [k for k in range(args.num_user)] 
+    forget_acc_ls = [] 
+    remember_acc_ls = [] 
+    test_result_ls = [] 
+    for k in range(args.num_user): 
+        test_loader = test_loaders[k] 
+        label_data_dict = {} 
         for data, target in test_loader:
-            data = data.tolist() # 数据列表
-            targets = target.tolist() # 目标列表
-            for idx, label in enumerate(targets): # 遍历目标列表
-                if label not in label_data_dict: # 如果标签不在标签数据字典中
-                    label_data_dict[label] = [] # 创建标签数据字典
-                label_data_dict[label].append((torch.tensor(data[idx]), torch.tensor(label))) # 添加标签数据
-        label_data_loaders = {} # 标签数据加载器
-        for label, data_list in label_data_dict.items(): # 遍历标签数据字典
-            class_loader = DataLoader(data_list, batch_size=len(data_list), shuffle=True) # 创建类加载器
-            label_data_loaders[label] = class_loader # 添加标签数据加载器
+            data = data.tolist() 
+            targets = target.tolist() 
+            for idx, label in enumerate(targets): 
+                if label not in label_data_dict: 
+                    label_data_dict[label] = [] 
+                label_data_dict[label].append((torch.tensor(data[idx]), torch.tensor(label))) 
+        label_data_loaders = {} 
+        for label, data_list in label_data_dict.items(): 
+            class_loader = DataLoader(data_list, batch_size=len(data_list), shuffle=True) 
+            label_data_loaders[label] = class_loader 
 
-        for label, loader in label_data_loaders.items(): # 遍历标签数据加载器
-            (test_loss, test_acc) = obj.test(model, label_data_loaders[label], args) # 测试
+        for label, loader in label_data_loaders.items(): 
+            (test_loss, test_acc) = obj.test(model, label_data_loaders[label], args) 
             
-            label_num = 0 # 标签数量
-            for data, target in label_data_loaders[label]: # 遍历标签数据加载器
-                label_num += data.size(0) # 标签数量
-            test_result_ls.append([epoch, k, label, label_num, test_acc, float(test_loss)]) # 添加测试结果
+            label_num = 0 
+            for data, target in label_data_loaders[label]: 
+                label_num += data.size(0) 
+            test_result_ls.append([epoch, k, label, label_num, test_acc, float(test_loss)]) 
             
-            if k in args.forget_client_idx: # 如果客户端在遗忘客户端索引中
-                forget_acc_ls.append(test_acc) # 添加遗忘准确率
+            if k in args.forget_client_idx: 
+                forget_acc_ls.append(test_acc) 
             else: 
-                remember_acc_ls.append(test_acc) # 添加记住准确率
-    avg_f_acc = sum(forget_acc_ls) / len(forget_acc_ls) # 计算平均遗忘准确率
-    avg_r_acc = sum(remember_acc_ls) / len(remember_acc_ls) # 计算平均记住准确率
-    return avg_f_acc, avg_r_acc, test_result_ls # 返回平均遗忘准确率、平均记住准确率和测试结果
+                remember_acc_ls.append(test_acc) 
+    avg_f_acc = sum(forget_acc_ls) / len(forget_acc_ls) 
+    avg_r_acc = sum(remember_acc_ls) / len(remember_acc_ls) 
+    return avg_f_acc, avg_r_acc, test_result_ls 
 
 def train_client_group_accuracy(obj, model, args, train_loaders):
-    """
-    计算训练集上的客户端遗忘/记住两组平均准确率。
-
-    返回:
-        avg_train_f_acc, avg_train_r_acc
-    """
     model.eval()
     forget_acc_ls = []
     remember_acc_ls = []
@@ -370,16 +253,9 @@ def train_client_group_accuracy(obj, model, args, train_loaders):
     return avg_train_f_acc, avg_train_r_acc
 
 def train_class_group_accuracy(obj, model, args, train_loaders):
-    """
-    计算训练集上的类别遗忘/记住两组平均准确率。
-
-    返回:
-        avg_train_f_acc, avg_train_r_acc
-    """
     forget_acc_ls = []
     remember_acc_ls = []
     test_result_ls = []
-    # 复用 obj.test 来评估每个类别的训练子集
     for k in range(args.num_user):
         train_loader = train_loaders[k]
         label_data_dict = {}
@@ -479,85 +355,71 @@ def select_forget_class(args, client_loaders):
     return client_loaders
 
 def baizhanting_attack(args, client_loaders, test_loaders):
-    """
-    标签翻转: 标签右移
-
-    0 -> 1
-
-    1 -> 2
-
-    ...
-
-    9 -> 0
-    """
     for user in args.forget_client_idx:
-        dataset_image = [] # 数据集图像
-        dataset_label = [] # 数据集标签
-        test_image = [] # 测试集图像
-        test_label = [] # 测试集标签
+        dataset_image = [] 
+        dataset_label = [] 
+        test_image = [] 
+        test_label = [] 
         for x, y in client_loaders[user]:
-            dataset_image.extend(x) # 数据集图像
-            dataset_label.extend(y) # 数据集标签
+            dataset_image.extend(x) 
+            dataset_label.extend(y) 
         for x, y in test_loaders[user]:
-            test_image.extend(x) # 测试集图像
+            test_image.extend(x) 
             test_label.extend(y)
         
-        # cursor添加的
-        # 检查数据是否为空
+        
         if len(dataset_image) == 0:
             print(f"Warning: Client {user} has no training data, skipping...")
             continue
             
-        data_x = [] # 数据集图像
-        data_y = [] # 数据集标签
-        test_x = [] # 测试集图像
-        test_y = [] # 测试集标签
+        data_x = [] 
+        data_y = [] 
+        test_x = [] 
+        test_y = [] 
         for idx, cls in enumerate(dataset_label):
-            if int(dataset_label[idx]) < args.num_classes-1: # 如果数据集标签小于最大标签
-                dataset_label[idx] = int(dataset_label[idx])+1 # 数据集标签加1
-            elif int(dataset_label[idx])==args.num_classes-1: # 如果数据集标签等于最大标签
-                dataset_label[idx] = 0 # 数据集标签为0
-            data_x.append(np.array(dataset_image[idx])) # 数据集图像
-            data_y.append(np.array(dataset_label[idx])) # 数据集标签
-
-        data_x = np.array(data_x) # 数据集图像
-        data_y = np.array(data_y) # 数据集标签
-        data_x = torch.Tensor(data_x).type(torch.float32) # 数据集图像
-        data_y = torch.Tensor(data_y).type(torch.int64) # 数据集标签
-        train_data = [(x1, y1) for x1, y1 in zip(data_x, data_y)] # 数据集
+            if int(dataset_label[idx]) < args.num_classes-1:
+                dataset_label[idx] = int(dataset_label[idx])+1 
+            elif int(dataset_label[idx])==args.num_classes-1:
+                dataset_label[idx] = 0 
+            data_x.append(np.array(dataset_image[idx])) 
+            data_y.append(np.array(dataset_label[idx])) 
+        data_x = np.array(data_x) 
+        data_y = np.array(data_y) 
+        data_x = torch.Tensor(data_x).type(torch.float32) 
+        data_y = torch.Tensor(data_y).type(torch.int64) 
+        train_data = [(x1, y1) for x1, y1 in zip(data_x, data_y)] 
         
-        # 检查训练数据是否为空
+        
         if len(train_data) == 0:
             print(f"Warning: Client {user} has no training data after processing, skipping...")
             continue
             
-        client_loaders[user] = torch.utils.data.DataLoader(train_data, batch_size=args.local_batch_size, shuffle=True, drop_last=False) # 数据集加载器
+        client_loaders[user] = torch.utils.data.DataLoader(train_data, batch_size=args.local_batch_size, shuffle=True, drop_last=False) 
         
-        # 检查测试数据是否为空
+        
         if len(test_label) == 0:
             print(f"Warning: Client {user} has no test data, skipping...")
             continue
             
         for idx, cls in enumerate(test_label):
-            if int(test_label[idx]) < args.num_classes-1: # 如果测试集标签小于最大标签
-                test_label[idx] = int(test_label[idx])+1 # 测试集标签加1
-            elif int(test_label[idx])==args.num_classes-1: # 如果测试集标签等于最大标签
-                test_label[idx] = 0 # 测试集标签为0
-            test_x.append(np.array(test_image[idx])) # 测试集图像
-            test_y.append(np.array(test_label[idx])) # 测试集标签
-
-        test_x = np.array(test_x) # 测试集图像
-        test_y = np.array(test_y) # 测试集标签
-        test_x = torch.Tensor(test_x).type(torch.float32) # 测试集图像
-        test_y = torch.Tensor(test_y).type(torch.int64) # 测试集标签
-        test_data = [(x1, y1) for x1, y1 in zip(test_x, test_y)] # 测试集
+            if int(test_label[idx]) < args.num_classes-1: 
+                test_label[idx] = int(test_label[idx])+1 
+            elif int(test_label[idx])==args.num_classes-1: 
+                test_label[idx] = 0 
+            test_x.append(np.array(test_image[idx])) 
+            test_y.append(np.array(test_label[idx])) 
+        test_x = np.array(test_x)
+        test_y = np.array(test_y) 
+        test_x = torch.Tensor(test_x).type(torch.float32) 
+        test_y = torch.Tensor(test_y).type(torch.int64) 
+        test_data = [(x1, y1) for x1, y1 in zip(test_x, test_y)] 
         
-        # 检查测试数据是否为空
+    
         if len(test_data) == 0:
             print(f"Warning: Client {user} has no test data after processing, skipping...")
             continue
             
-        test_loaders[user] = torch.utils.data.DataLoader(test_data, batch_size=args.local_batch_size, shuffle=True, drop_last=False) # 测试集加载器
+        test_loaders[user] = torch.utils.data.DataLoader(test_data, batch_size=args.local_batch_size, shuffle=True, drop_last=False) 
     return client_loaders, test_loaders
 
 def backdoor_attack(args, client_loaders):
@@ -597,46 +459,10 @@ def erase_backdoor(args, client_loaders):
         client_loaders[client] = torch.utils.data.DataLoader(dataset, batch_size=args.local_batch_size, shuffle=False, drop_last=False)
     return client_loaders
 
-# def insert_backdoor(args, data, target, trigger_label=0, trigger_pixel_value=255):
-#     """"
-#     功能:
-#     在图像中插入后门
-
-#     输入:
-#     args: 参数
-#     data: 数据
-#     target: 目标
-#     trigger_label: 触发标签
-#     trigger_pixel_value: 触发像素值
-
-#     输出:
-#     x_bk: 插入后门后的数据
-#     y_bk: 插入后门后的目标
-#     """
-#     x_bk = copy.deepcopy(data)
-#     x_bk[:, :, -1, -1] = trigger_pixel_value
-#     y_bk = torch.full_like(target, trigger_label)
-#     return x_bk, y_bk
 def insert_backdoor(args, data, target, trigger_label=None, trigger_pixel_value=255):
-    """
-    功能:
-    在图像中插入后门，动态选择触发标签
-
-    输入:
-    args: 参数
-    data: 数据
-    target: 目标
-    trigger_label: 触发标签, 如果为None则自动选择
-    trigger_pixel_value: 触发像素值
-
-    输出:
-    x_bk: 插入后门后的数据
-    y_bk: 插入后门后的目标
-    """
     x_bk = copy.deepcopy(data)
     x_bk[:, :, -1, -1] = trigger_pixel_value
     
-    # 如果没有指定触发标签，选择数据中最常见的标签
     if trigger_label is None:
         unique_labels, counts = torch.unique(target, return_counts=True)
         trigger_label = unique_labels[torch.argmax(counts)].item()
@@ -645,7 +471,6 @@ def insert_backdoor(args, data, target, trigger_label=None, trigger_pixel_value=
     return x_bk, y_bk
 
     
-# construct attack model
 class FCNet(nn.Module):
 
     def __init__(self, args, dim_hidden = 20, dim_out = 2):
@@ -1054,7 +879,6 @@ def select_part_sample(args, client_all_loaders, selected_clients):
     return select_client_loaders
 
 def calculate_forget_client_loaders_size(client_all_loaders, forget_client_idx):
-    # 计算遗忘客户端索引下的遗忘客户端的数据量的空间大小（MB）
     size = 0
     for idx in forget_client_idx:
         size += len(client_all_loaders[idx]) * 4
